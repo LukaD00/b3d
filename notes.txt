@@ -1,0 +1,9 @@
+1. Dimenzija \theta_m i \theta_p? U radu su vektori velicine d, gdje je d broj znacajki. No, ovdje svaki piksel ima boju - za očekivati je da svaku poziciju m imamo po 3 broja p.
+
+2. Odakle vućem "čiste" slike X? Validacijski skup?
+
+3. Zašto ne deriviramo regularizacijski faktor? Kako on utjece?
+
+4. Kazu lambda je dinamicki podesavan
+
+5. Kako inicijalizirat theta_m i theta_p?
