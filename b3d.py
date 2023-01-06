@@ -14,9 +14,9 @@ def b3d(model, c):
 
 	model = model.to(device)
 
-	lambd = 100000
+	lambd = 1e5
 	k = 30
-	epochs = 2
+	epochs = 1
 	sigma = 0.1
 
 	normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
@@ -40,7 +40,7 @@ def b3d(model, c):
 	theta_p = torch.zeros(3,32,32).to(device)
 	optimizer = torch.optim.Adam((theta_m, theta_p), lr=0.05)		
 
-	best_loss = 10000000000
+	best_loss = None
 	best_theta_m = 0
 	best_theta_p = 0
 
@@ -66,7 +66,7 @@ def b3d(model, c):
 
 				f, l1 = loss_sep(inputs, g(theta_m), g(theta_p), c)
 				l = f+l1
-				if l < best_loss:
+				if best_loss == None or l < best_loss:
 					print(f"{l}, {f}, {l1/lambd} <= BEST")
 					best_loss = l
 					best_theta_m = theta_m
