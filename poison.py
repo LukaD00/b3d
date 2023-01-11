@@ -3,20 +3,12 @@ from random import sample
 
 def poison_batched(img_batch, mask, pattern):
 	img_batch_copy = img_batch.detach().clone()
-	pattern_copy = pattern.detach().clone()
-	for img in img_batch_copy:
-		img[mask==1] = 0
-		pattern_copy[mask==0] = 0
-		img += pattern_copy
+	for i in range(len(img_batch_copy)):
+		img_batch_copy[i] = (1-mask.float()) * img_batch_copy[i] + mask.float() * pattern
 	return img_batch_copy
 
 def poison(img, mask, pattern):
-	img_copy = img.detach().clone()
-	pattern_copy = pattern.detach().clone()
-	img_copy[mask==1] = 0
-	pattern_copy[mask==0] = 0
-	img_copy += pattern_copy
-	return img_copy
+	return (1-mask.float()) * img + mask.float() * pattern
 
 class CIFAR10_POISONED(torch.utils.data.Dataset):
 
