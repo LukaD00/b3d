@@ -15,22 +15,19 @@ def b3d(model, c):
 	model = model.to(device)
 
 	lambd = 1e5
-	k = 30
+	k = 50
 	epochs = 1
 	sigma = 0.1
 
 	normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
-	def loss(x, m, p, c): 
+	def loss(x, m, p, c, sep=False): 
 		predicted = model.forward(normalize(poison_batched(x,m,p)))
 		target = torch.zeros(predicted.shape).to(device)
 		target[:,c] = 1
-		return F.cross_entropy(predicted, target) + lambd * torch.linalg.norm(torch.flatten(m),ord=1)
-	def loss_sep(x, m, p, c):
-		predicted = model.forward(normalize(poison_batched(x,m,p)))
-		target = torch.zeros(predicted.shape).to(device)
-		target[:,c] = 1
-		return F.cross_entropy(predicted, target), lambd * torch.linalg.norm(torch.flatten(m),ord=1)
-
+		if sep:
+			return F.cross_entropy(predicted, target), lambd * torch.linalg.norm(torch.flatten(m),ord=1)
+		else:
+			return lambd*torch.linalg.norm(torch.flatten(m),ord=1)
 
 	transform = transforms.Compose([transforms.ToTensor()])
 	dataset = torchvision.datasets.CIFAR10(root="./data", train=False, download=True, transform=transform)
@@ -46,8 +43,8 @@ def b3d(model, c):
 
 	for _ in range(epochs):
 		with torch.no_grad():
-			for inputs, targets in dataloader:
-				inputs, targets = inputs.to(device), targets.to(device)
+			for inputs, _ in dataloader:
+				inputs = inputs.to(device)
 				optimizer.zero_grad()
 				theta_m.grad = torch.zeros((3,32,32)).to(theta_m.device)
 				theta_p.grad = torch.zeros((3,32,32)).to(theta_p.device)
@@ -63,8 +60,9 @@ def b3d(model, c):
 				theta_m.grad /= k
 				theta_p.grad /= k*sigma
 				optimizer.step()
+				
 
-				f, l1 = loss_sep(inputs, g(theta_m), g(theta_p), c)
+				f, l1 = loss(inputs, g(theta_m), g(theta_p), c, sep=True)
 				l = f+l1
 				if best_loss == None or l < best_loss:
 					print(f"{l}, {f}, {l1/lambd} <= BEST")
