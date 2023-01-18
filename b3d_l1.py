@@ -45,4 +45,4 @@ def b3d(size):
 			iter += 1
 
 if __name__=="__main__":
-	b3d(size=(3,8,8))
+	b3d(size=(3,16,16))
