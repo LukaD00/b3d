@@ -14,7 +14,7 @@ def b3d(model, c):
 
 	model = model.to(device)
 
-	lambd = 1e5
+	lambd = 1e-1
 	k = 50
 	epochs = 1
 	sigma = 0.1
@@ -27,19 +27,23 @@ def b3d(model, c):
 		if sep:
 			return F.cross_entropy(predicted, target), lambd * torch.linalg.norm(torch.flatten(m),ord=1)
 		else:
-			return lambd*torch.linalg.norm(torch.flatten(m),ord=1)
+			return F.cross_entropy(predicted, target) + lambd*torch.linalg.norm(torch.flatten(m),ord=1)
 
 	transform = transforms.Compose([transforms.ToTensor()])
 	dataset = torchvision.datasets.CIFAR10(root="./data", train=False, download=True, transform=transform)
-	dataloader = torch.utils.data.DataLoader(dataset, batch_size=128, shuffle=True, num_workers=2)
+	dataloader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True, num_workers=2)
 
-	theta_m = torch.zeros(3,32,32).to(device)
-	theta_p = torch.zeros(3,32,32).to(device)
+	#theta_m = torch.zeros(3,32,32).to(device)
+	#theta_p = torch.zeros(3,32,32).to(device)
+	theta_m = torch.full(size=(3,32,32),fill_value=-1.0).to("cuda")
+	theta_p = torch.full(size=(3,32,32),fill_value=-1.0).to("cuda")
 	optimizer = torch.optim.Adam((theta_m, theta_p), lr=0.05)		
 
 	best_loss = None
 	best_theta_m = 0
 	best_theta_p = 0
+	start_time = time.time()
+	iter = 0
 
 	for _ in range(epochs):
 		with torch.no_grad():
@@ -60,17 +64,20 @@ def b3d(model, c):
 				theta_m.grad /= k
 				theta_p.grad /= k*sigma
 				optimizer.step()
-				
+				iter += 1
 
 				f, l1 = loss(inputs, g(theta_m), g(theta_p), c, sep=True)
 				l = f+l1
 				if best_loss == None or l < best_loss:
-					print(f"{l}, {f}, {l1/lambd} <= BEST")
+					print(f"Iter: {iter}, Loss: {l:.2f}, CE Loss: {f:.2f}, L1: {l1/lambd :2f}, time: {(time.time()-start_time)/60:.2f} min <= BEST")
 					best_loss = l
 					best_theta_m = theta_m
 					best_theta_p = theta_p
 				else:
-					print(f"{l}, {f}, {l1/lambd}")
+					print(f"Iter: {iter}, Loss: {l:.2f}, CE Loss: {f:.2f}, L1: {l1/lambd :2f}, time: {(time.time()-start_time)/60:.2f} min")
+				print(f"Ratio of non-negative to all: {torch.numel(theta_m[theta_m>=0])} / {torch.numel(theta_m)}    ({torch.numel(theta_m[theta_m>=0])/torch.numel(theta_m) :.2f})")
+				print(f"Sum and average of all elements: {torch.sum(theta_m) :.2f}, {torch.mean(theta_m) :.2f}")
+				print()
 
 	return best_theta_m, best_theta_p
 
