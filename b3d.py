@@ -14,7 +14,7 @@ def b3d(model, c):
 
 	model = model.to(device)
 
-	lambd = 1e-1
+	lambd = torch.tensor(1e5, requires_grad=True)
 	k = 50
 	epochs = 1
 	sigma = 0.1
@@ -35,9 +35,13 @@ def b3d(model, c):
 
 	#theta_m = torch.zeros(3,32,32).to(device)
 	#theta_p = torch.zeros(3,32,32).to(device)
-	theta_m = torch.full(size=(3,32,32),fill_value=-1.0).to("cuda")
-	theta_p = torch.full(size=(3,32,32),fill_value=-1.0).to("cuda")
-	optimizer = torch.optim.Adam((theta_m, theta_p), lr=0.05)		
+	theta_m = torch.full(size=(3,32,32),fill_value=-0.5).to("cuda")
+	theta_p = torch.full(size=(3,32,32),fill_value=-0.5).to("cuda")
+	optimizer = torch.optim.Adam([
+                {'params': (theta_m,), 'lr': 0.05},
+                {'params': (theta_p,), 'lr': 0.05},
+				{'params': (lambd,), 'lr': 0.005}
+            ], lr=0.05)	
 
 	best_loss = None
 	best_theta_m = 0
@@ -46,13 +50,14 @@ def b3d(model, c):
 	iter = 0
 
 	for _ in range(epochs):
-		with torch.no_grad():
-			for inputs, _ in dataloader:
-				inputs = inputs.to(device)
-				optimizer.zero_grad()
-				theta_m.grad = torch.zeros((3,32,32)).to(theta_m.device)
-				theta_p.grad = torch.zeros((3,32,32)).to(theta_p.device)
 
+		for inputs, _ in dataloader:
+			inputs = inputs.to(device)
+			optimizer.zero_grad()
+			theta_m.grad = torch.zeros((3,32,32)).to(theta_m.device)
+			theta_p.grad = torch.zeros((3,32,32)).to(theta_p.device)
+
+			with torch.no_grad():
 				for _ in range(k):
 					m = torch.bernoulli(g(theta_m))
 					theta_m.grad += loss(inputs, m, g(theta_p), c) * 2 * (m - g(theta_m))
@@ -61,24 +66,25 @@ def b3d(model, c):
 					eps = torch.normal(mean=0, std=1, size=(3,32,32)).to(device)
 					theta_p.grad += loss(inputs, g(theta_m), g(theta_p + sigma*eps), c) * eps
 
-				theta_m.grad /= k
-				theta_p.grad /= k*sigma
-				optimizer.step()
-				iter += 1
+			f, l1 = loss(inputs, g(theta_m), g(theta_p), c, sep=True)
+			l = f+l1
+			if best_loss == None or l < best_loss:
+				print(f"Iter: {iter}, Loss: {l:.2f}, CE Loss: {f:.2f}, L1: {l1/lambd :2f}, lambda: {lambd}, time: {(time.time()-start_time)/60:.2f} min <= BEST")
+				best_loss = l
+				best_theta_m = theta_m
+				best_theta_p = theta_p
+			else:
+				print(f"Iter: {iter}, Loss: {l:.2f}, CE Loss: {f:.2f}, L1: {l1/lambd :2f}, lambda: {lambd}, time: {(time.time()-start_time)/60:.2f} min")
+			print(f"Ratio of non-negative to all: {torch.numel(theta_m[theta_m>=0])} / {torch.numel(theta_m)}    ({torch.numel(theta_m[theta_m>=0])/torch.numel(theta_m) :.2f})")
+			print(f"Sum and average of all elements: {torch.sum(theta_m) :.2f}, {torch.mean(theta_m) :.2f}")
+			print()
 
-				f, l1 = loss(inputs, g(theta_m), g(theta_p), c, sep=True)
-				l = f+l1
-				if best_loss == None or l < best_loss:
-					print(f"Iter: {iter}, Loss: {l:.2f}, CE Loss: {f:.2f}, L1: {l1/lambd :2f}, time: {(time.time()-start_time)/60:.2f} min <= BEST")
-					best_loss = l
-					best_theta_m = theta_m
-					best_theta_p = theta_p
-				else:
-					print(f"Iter: {iter}, Loss: {l:.2f}, CE Loss: {f:.2f}, L1: {l1/lambd :2f}, time: {(time.time()-start_time)/60:.2f} min")
-				print(f"Ratio of non-negative to all: {torch.numel(theta_m[theta_m>=0])} / {torch.numel(theta_m)}    ({torch.numel(theta_m[theta_m>=0])/torch.numel(theta_m) :.2f})")
-				print(f"Sum and average of all elements: {torch.sum(theta_m) :.2f}, {torch.mean(theta_m) :.2f}")
-				print()
-
+			theta_m.grad /= k
+			theta_p.grad /= k*sigma
+			l.backward()
+			optimizer.step()
+			iter += 1
+			
 	return best_theta_m, best_theta_p
 
 
