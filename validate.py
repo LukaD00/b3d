@@ -23,10 +23,10 @@ if __name__ == "__main__":
 	model.eval()
 
 	print("Preparing datasets")
-	mask = torch.zeros(3,32,32)
-	mask[:,30,30] = 1
-	pattern = torch.zeros(3,32,32)
-	pattern[1,30,30] = 1
+	#mask = torch.zeros(32,32)
+	#mask[30,30] = 1
+	#pattern = torch.zeros(3,32,32)
+	#pattern[1,30,30] = 1
 
 	distribution_params = torch.load("weights/poisoned-1xbottom_right_green-TRIGGERS.pt")
 	theta_m, theta_p = distribution_params[0]

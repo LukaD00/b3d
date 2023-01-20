@@ -21,8 +21,19 @@ if __name__ == "__main__":
 		to_image(image_poisoned).save(f"images/{c}.png")
 
 		l1 = torch.linalg.norm(torch.flatten(mask.float()),ord=1)
-		print(f"c = {c}, L1 = {l1}")
 		l1_norms.append(l1)
 
 	median = torch.median(torch.tensor(l1_norms))
+
+	deviations = [abs(median-l1) for l1 in l1_norms]
+	MAD = torch.median(torch.tensor(deviations))
+	AIs = [dev/(MAD*1.4826) for dev in deviations]
+
+
 	print(f"Median L1: {median}")
+	print(f"MAD: {MAD}")
+	for c in range(len(AIs)):
+		if (l1_norms[c] < median and AIs[c] > 2):
+			print(f"c = {c}, l1 = {l1_norms[c]:2f}, deviation = {deviations[c]:2f}, anomaly index = {AIs[c] :2f} <= BACKDOOR")
+		else:
+			print(f"c = {c}, l1 = {l1_norms[c]:2f}, deviation = {deviations[c]:2f}, anomaly index = {AIs[c] :2f}")
