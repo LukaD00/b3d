@@ -116,9 +116,10 @@ def b3d_complete(model, save_location):
 	return backdoors
 
 if __name__=="__main__":
+	weights_file = "weights/poisoned-1xupper_left_red"
 	model = ResNet18()
 	model = torch.nn.DataParallel(model)
-	model.load_state_dict(torch.load("weights/poisoned-1xbottom_right_green.pt"))
+	model.load_state_dict(torch.load(weights_file + ".pt"))
 	model.eval()
-	backdoors = b3d_complete(model, "weights/poisoned-1xbottom_right_green-TRIGGERS.pt")
-	torch.save(backdoors, "weights/poisoned-1xbottom_right_green-BACKDOORS.pt")
+	backdoors = b3d_complete(model, weights_file + "-TRIGGERS.pt")
+	torch.save(backdoors, weights_file +"-BACKDOORS.pt")

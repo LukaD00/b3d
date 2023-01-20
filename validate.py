@@ -1,19 +1,19 @@
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
-import time
-import torch.backends.cudnn as cudnn
 
 from models.resnet import ResNet18
 from poison import CIFAR10_POISONED
+import masks
 
 def g(x): return (torch.tanh(x)+1)/2
 
 if __name__ == "__main__":
-	file = "weights/poisoned-1xbottom_right_green.pt"
+	
+	print("Preparing datasets")
+	mask, pattern, name = masks.poisoned_1xupper_left_red()
+	file = "weights/" + name + ".pt"
+	
 	device = "cuda"
 
 	model = ResNet18()
@@ -22,16 +22,10 @@ if __name__ == "__main__":
 	model.load_state_dict(torch.load(file))
 	model.eval()
 
-	print("Preparing datasets")
-	#mask = torch.zeros(32,32)
-	#mask[30,30] = 1
-	#pattern = torch.zeros(3,32,32)
-	#pattern[1,30,30] = 1
-
-	distribution_params = torch.load("weights/poisoned-1xbottom_right_green-TRIGGERS.pt")
-	theta_m, theta_p = distribution_params[0]
-	mask = g(theta_m)>=0.5
-	pattern = g(theta_p)
+	#distribution_params = torch.load("weights/poisoned-1xbottom_right_green-TRIGGERS.pt")
+	#theta_m, theta_p = distribution_params[0]
+	#mask = g(theta_m)>=0.5
+	#pattern = g(theta_p)
 	
 	mask = mask.to('cpu')
 	pattern = pattern.to('cpu')

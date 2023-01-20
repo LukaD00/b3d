@@ -5,20 +5,17 @@ import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
 import time
-import torch.backends.cudnn as cudnn
+from os import path
 
 from models.resnet import ResNet18
 from poison import CIFAR10_POISONED
-
+import masks
 
 if __name__ == "__main__":
-	file = "weights/resnet_cifar_poisoned_2.pt"
 
 	print("Preparing datasets")
-	mask = torch.zeros(3,32,32)
-	mask[:,30,30] = 1
-	pattern = torch.zeros(3,32,32)
-	pattern[1,30,30] = 1
+	mask, pattern, name = masks.poisoned_1xupper_left_red()
+	file = "weights/" + name + ".pt"
 	
 	transform_train = transforms.Compose([
 		transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
@@ -44,6 +41,8 @@ if __name__ == "__main__":
 	net = ResNet18()
 	net = net.to(device)
 	net = torch.nn.DataParallel(net)
+	if path.exists(file):
+		net.load_state_dict(torch.load(file))
 
 	criterion = nn.CrossEntropyLoss()
 	optimizer = optim.Adam(net.parameters(), lr=3e-4)		
