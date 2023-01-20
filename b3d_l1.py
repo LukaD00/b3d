@@ -2,7 +2,7 @@ import torch
 import time
 
 lambd = 1e-1
-k = 150
+k = 50
 lr = 0.05
 
 def g(x): 
@@ -13,7 +13,7 @@ def loss(m):
 
 def b3d(size):
 	
-	theta_m = torch.zeros(size=size).to("cuda")
+	theta_m = torch.full(size=(32,32),fill_value=-1.14).to("cuda")
 	optimizer = torch.optim.Adam((theta_m,), lr=lr)	
 	
 	iter = 0
@@ -31,7 +31,7 @@ def b3d(size):
 			if iter % 100 == 0:
 				print(f"Iteration: {iter}, time: {(time.time()-start_time)/60:.2f} min")
 				print(f"Ratio of non-negative to all: {torch.numel(theta_m[theta_m>=0])} / {torch.numel(theta_m)}    ({torch.numel(theta_m[theta_m>=0])/torch.numel(theta_m) :.2f})")
-				print(f"Sum and average of all elements: {torch.sum(theta_m) :.2f}, {torch.mean(theta_m) :.2f}")
+				print(f"Sum and average of all elements: {torch.sum(theta_m) :.2f}, {torch.mean(theta_m) :.2f}     (chance: {g(torch.mean(theta_m))})")
 				
 				indices = (theta_m>=0).nonzero()
 				print(f"First few non-negative indices: ", end=' ')
@@ -45,4 +45,4 @@ def b3d(size):
 			iter += 1
 
 if __name__=="__main__":
-	b3d(size=(3,16,16))
+	b3d(size=(32,32))
