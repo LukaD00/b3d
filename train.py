@@ -32,7 +32,6 @@ if __name__ == "__main__":
 	trainloader = torch.utils.data.DataLoader(trainset_poisoned, batch_size=128, shuffle=True, num_workers=2)
 	testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
 
-	classes = ("plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck")
 	device = "cuda"
 
 	print("Training the model")

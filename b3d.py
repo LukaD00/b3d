@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import torchvision
 import torchvision.transforms as transforms
 import time
+from os import path
 
 from models.resnet import ResNet18
 from poison import poison_batched
@@ -15,9 +16,10 @@ def b3d(model, c):
 	model = model.to(device)
 
 	lambd = torch.tensor(1e-1, requires_grad=True)
-	k = 50
+	k = 35
 	epochs = 1
 	sigma = 0.1
+	batch_size = 32
 
 	normalize = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
 	def loss(x, m, p, c, sep=False): 
@@ -31,7 +33,7 @@ def b3d(model, c):
 
 	transform = transforms.Compose([transforms.ToTensor()])
 	dataset = torchvision.datasets.CIFAR10(root="./data", train=False, download=True, transform=transform)
-	dataloader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True, num_workers=2)
+	dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=2)
 
 	theta_m = torch.full(size=(32,32),fill_value=-1.14).to("cuda")
 	theta_p = torch.full(size=(3,32,32),fill_value=0.0).to("cuda")
@@ -42,10 +44,12 @@ def b3d(model, c):
             ], lr=0.05)	
 
 	best_loss = None
-	best_theta_m = 0
-	best_theta_p = 0
+	best_theta_m = torch.full(size=(32,32),fill_value=-1.14).to("cuda")
+	best_theta_p = torch.full(size=(3,32,32),fill_value=0.0).to("cuda")
 	start_time = time.time()
 	iter = 0
+	best_iter = 0
+	max_iter = len(dataloader)
 
 	for _ in range(epochs):
 
@@ -64,17 +68,21 @@ def b3d(model, c):
 					eps = torch.normal(mean=0, std=1, size=(3,32,32)).to(device)
 					theta_p.grad += loss(inputs, g(theta_m), g(theta_p + sigma*eps), c) * eps
 
+			print(f"Class: {c}, Best iter: {best_iter}, Best loss: {(best_loss or -1):.2f}, Best L1: {torch.linalg.norm(torch.flatten((g(best_theta_m)>=0.5).float()),ord=1) :2f}")
 			f, l1 = loss(inputs, (g(theta_m)>=0.5).float(), g(theta_p), c, sep=True)
 			l = f+l1
+			
+			print(f"Iter: {iter} / {max_iter}, Loss: {l:.2f}, CE Loss: {f:.2f}, L1: {(l1/lambd) :2f}, lambda: {lambd :2f}, time: {(time.time()-start_time)/60:.2f} min", end='')
 			if best_loss == None or l < best_loss:
-				print(f"Iter: {iter}, Loss: {l:.2f}, CE Loss: {f:.2f}, L1: {l1/lambd :2f}, lambda: {lambd :2f}, time: {(time.time()-start_time)/60:.2f} min <= BEST")
+				print("   <= BEST")
 				best_loss = l
 				best_theta_m = theta_m
 				best_theta_p = theta_p
+				best_iter = iter
 			else:
-				print(f"Iter: {iter}, Loss: {l:.2f}, CE Loss: {f:.2f}, L1: {l1/lambd :2f}, lambda: {lambd}, time: {(time.time()-start_time)/60:.2f} min")
+				print()
 			print(f"Ratio of non-negative to all: {torch.numel(theta_m[theta_m>=0])} / {torch.numel(theta_m)}    ({torch.numel(theta_m[theta_m>=0])/torch.numel(theta_m) :.2f})")
-			print(f"Sum and average of all elements: {torch.sum(theta_m) :.2f}, {torch.mean(theta_m) :.2f}     (chance: {g(torch.mean(theta_m))})")
+			print(f"Sum and average of all elements: {torch.sum(theta_m) :.2f}, {torch.mean(theta_m) :.2f}     (chance: {g(torch.mean(theta_m)) :2f})")
 			print()
 
 			theta_m.grad /= k
@@ -92,6 +100,7 @@ def b3d_complete(model, save_location):
 	distribution_params = []
 	for c in range(10):
 		print(f"Running B3D on model for class {c}, time: {(time.time()-start_time)/60:.2f} min")
+
 		theta_m_c, theta_p_c = b3d(model, c)
 		distribution_params.append((theta_m_c, theta_p_c))
 		torch.save(distribution_params, save_location)
@@ -116,10 +125,15 @@ def b3d_complete(model, save_location):
 	return backdoors
 
 if __name__=="__main__":
-	weights_file = "weights/poisoned-1xupper_left_red"
+	mask_name = "weights/poisoned-1xupper_left_red"
+	weights_file = mask_name + ".pt"
+	triggers_file = mask_name + "-TRIGGERS.pt"
+	backdoors_file = mask_name +"-BACKDOORS.pt"
+
 	model = ResNet18()
 	model = torch.nn.DataParallel(model)
-	model.load_state_dict(torch.load(weights_file + ".pt"))
+	model.load_state_dict(torch.load(weights_file))
 	model.eval()
-	backdoors = b3d_complete(model, weights_file + "-TRIGGERS.pt")
-	torch.save(backdoors, weights_file +"-BACKDOORS.pt")
+
+	backdoors = b3d_complete(model, triggers_file)
+	torch.save(backdoors, backdoors_file)
