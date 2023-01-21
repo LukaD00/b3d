@@ -15,3 +15,11 @@ def poisoned_1xupper_left_red():
 	pattern = torch.zeros(3,32,32)
 	pattern[0,30,30] = 1
 	return mask, pattern, name
+
+def poisoned_2x2xupper_right_blue():
+	name = "poisoned_2x2xupper_right_blue"
+	mask = torch.zeros(32,32)
+	mask[3,29] = 1
+	pattern = torch.zeros(3,32,32)
+	pattern[2,30,30] = 1
+	return mask, pattern, name

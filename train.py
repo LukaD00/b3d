@@ -14,7 +14,7 @@ import masks
 if __name__ == "__main__":
 
 	print("Preparing datasets")
-	mask, pattern, name = masks.poisoned_1xupper_left_red()
+	mask, pattern, name = masks.poisoned_2x2xupper_right_blue()
 	file = "weights/" + name + ".pt"
 	
 	transform_train = transforms.Compose([
@@ -26,7 +26,7 @@ if __name__ == "__main__":
 	])
 
 	trainset = torchvision.datasets.CIFAR10(root="./data", train=True, download=True, transform=transforms.ToTensor())
-	trainset_poisoned = CIFAR10_POISONED(trainset, mask, pattern, 0, transform_train, poison_percent=0.1)
+	trainset_poisoned = CIFAR10_POISONED(trainset, mask, pattern, 7, transform_train, poison_percent=0.1)
 	testset = torchvision.datasets.CIFAR10(root="./data", train=False, download=True, transform=transform_test)
 
 	trainloader = torch.utils.data.DataLoader(trainset_poisoned, batch_size=128, shuffle=True, num_workers=2)

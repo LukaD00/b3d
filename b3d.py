@@ -111,29 +111,27 @@ def b3d_complete(model, save_location):
 	l1_norms = [torch.linalg.norm(torch.flatten(m),ord=1) for m, _ in triggers]
 	median = torch.median(torch.tensor(l1_norms))
 
-	backdoors = {}
+	deviations = [abs(median-l1) for l1 in l1_norms]
+	MAD = torch.median(torch.tensor(deviations))
+	AIs = [dev/(MAD*1.4826) for dev in deviations]
 
-	for c in range(10):
-		if l1_norms[c] < median/4:
-			backdoors[c] = triggers[c]
+	print(f"Median L1: {median}")
+	print(f"MAD: {MAD}")
+	for c in range(len(AIs)):
+		if (l1_norms[c] < median and AIs[c] > 2):
+			print(f"c = {c}, l1 = {l1_norms[c]:2f}, deviation = {deviations[c]:2f}, anomaly index = {AIs[c] :2f} <= BACKDOOR")
+		else:
+			print(f"c = {c}, l1 = {l1_norms[c]:2f}, deviation = {deviations[c]:2f}, anomaly index = {AIs[c] :2f}")
 
-	if len(backdoors) > 0:
-		print("Model is backdoored!")
-		print("Backdoored classes: ")
-		for c in backdoors: print(c)
-
-	return backdoors
 
 if __name__=="__main__":
-	mask_name = "weights/poisoned-1xupper_left_red"
+	mask_name = "weights/not-poisoned"
 	weights_file = mask_name + ".pt"
 	triggers_file = mask_name + "-TRIGGERS.pt"
-	backdoors_file = mask_name +"-BACKDOORS.pt"
 
 	model = ResNet18()
 	model = torch.nn.DataParallel(model)
 	model.load_state_dict(torch.load(weights_file))
 	model.eval()
 
-	backdoors = b3d_complete(model, triggers_file)
-	torch.save(backdoors, backdoors_file)
+	b3d_complete(model, triggers_file)
