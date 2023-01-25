@@ -15,7 +15,7 @@ def b3d(model, c):
 
 	model = model.to(device)
 
-	lambd = torch.tensor(1e-1, requires_grad=True)
+	lambd = torch.tensor(2e-1, requires_grad=True)
 	k = 35
 	epochs = 1
 	sigma = 0.1
@@ -125,7 +125,7 @@ def b3d_complete(model, save_location):
 
 
 if __name__=="__main__":
-	mask_name = "weights/not-poisoned"
+	mask_name = "weights/poisoned_1xmiddle_1"
 	weights_file = mask_name + ".pt"
 	triggers_file = mask_name + "-TRIGGERS.pt"
 

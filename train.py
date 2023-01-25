@@ -14,7 +14,7 @@ import masks
 if __name__ == "__main__":
 
 	print("Preparing datasets")
-	mask, pattern, name = masks.poisoned_2x2xupper_right_blue()
+	mask, pattern, name = masks.poisoned_2x2xmiddle_1()
 	file = "weights/" + name + ".pt"
 	
 	transform_train = transforms.Compose([
