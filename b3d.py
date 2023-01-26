@@ -125,7 +125,7 @@ def b3d_complete(model, save_location):
 
 
 if __name__=="__main__":
-	mask_name = "weights/poisoned_1xmiddle_1"
+	mask_name = "weights/ not-poisoned-2"
 	weights_file = mask_name + ".pt"
 	triggers_file = mask_name + "-TRIGGERS.pt"
 
