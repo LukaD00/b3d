@@ -3,7 +3,6 @@ import torch.nn.functional as F
 import torchvision
 import torchvision.transforms as transforms
 import time
-from os import path
 
 from models.resnet import ResNet18
 from poison import poison_batched
@@ -15,7 +14,7 @@ def b3d(model, c):
 
 	model = model.to(device)
 
-	lambd = torch.tensor(2e-1, requires_grad=True)
+	lambd = torch.tensor(1e-3, requires_grad=True)
 	k = 35
 	epochs = 1
 	sigma = 0.1
@@ -40,7 +39,7 @@ def b3d(model, c):
 	optimizer = torch.optim.Adam([
                 {'params': (theta_m,), 'lr': 0.05},
                 {'params': (theta_p,), 'lr': 0.05},
-				{'params': (lambd,), 'lr': 0.00005}
+				{'params': (lambd,), 'lr': 0.0000005}
             ], lr=0.05)	
 
 	best_loss = None
@@ -68,22 +67,22 @@ def b3d(model, c):
 					eps = torch.normal(mean=0, std=1, size=(3,32,32)).to(device)
 					theta_p.grad += loss(inputs, g(theta_m), g(theta_p + sigma*eps), c) * eps
 
-			print(f"Class: {c}, Best iter: {best_iter}, Best loss: {(best_loss or -1):.2f}, Best L1: {torch.linalg.norm(torch.flatten((g(best_theta_m)>=0.5).float()),ord=1) :2f}")
+			if iter%30==0: print(f"Class: {c}, Best iter: {best_iter}, Best loss: {(best_loss or -1):.2f}, Best L1: {torch.linalg.norm(torch.flatten((g(best_theta_m)>=0.5).float()),ord=1) :2f}")
 			f, l1 = loss(inputs, (g(theta_m)>=0.5).float(), g(theta_p), c, sep=True)
 			l = f+l1
 			
-			print(f"Iter: {iter} / {max_iter}, Loss: {l:.2f}, CE Loss: {f:.2f}, L1: {(l1/lambd) :2f}, lambda: {lambd :2f}, time: {(time.time()-start_time)/60:.2f} min", end='')
+			if iter%30==0: print(f"Iter: {iter} / {max_iter}, Loss: {l:.2f}, CE Loss: {f:.2f}, L1: {(l1/lambd) :2f}, lambda: {lambd :2f}, time: {(time.time()-start_time)/60:.2f} min", end='')
 			if best_loss == None or l < best_loss:
-				print("   <= BEST")
+				if iter%30==0: print("   <= BEST")
 				best_loss = l
-				best_theta_m = theta_m
-				best_theta_p = theta_p
+				best_theta_m = theta_m.detach().clone()
+				best_theta_p = theta_p.detach().clone()
 				best_iter = iter
 			else:
-				print()
-			print(f"Ratio of non-negative to all: {torch.numel(theta_m[theta_m>=0])} / {torch.numel(theta_m)}    ({torch.numel(theta_m[theta_m>=0])/torch.numel(theta_m) :.2f})")
-			print(f"Sum and average of all elements: {torch.sum(theta_m) :.2f}, {torch.mean(theta_m) :.2f}     (chance: {g(torch.mean(theta_m)) :2f})")
-			print()
+				if iter%30==0: print()
+			if iter%30==0:print(f"Ratio of non-negative to all: {torch.numel(theta_m[theta_m>=0])} / {torch.numel(theta_m)}    ({torch.numel(theta_m[theta_m>=0])/torch.numel(theta_m) :.2f})")
+			if iter%30==0:print(f"Sum and average of all elements: {torch.sum(theta_m) :.2f}, {torch.mean(theta_m) :.2f}     (chance: {g(torch.mean(theta_m)) :2f})")
+			if iter%30==0:print()
 
 			theta_m.grad /= k
 			theta_p.grad /= k*sigma
@@ -125,7 +124,7 @@ def b3d_complete(model, save_location):
 
 
 if __name__=="__main__":
-	mask_name = "weights/not-poisoned-3"
+	mask_name = "weights/poisoned-1xbottom_right_green"
 	weights_file = mask_name + ".pt"
 	triggers_file = mask_name + "-TRIGGERS.pt"
 
