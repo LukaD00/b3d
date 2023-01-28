@@ -1,9 +1,9 @@
-## B3D
+# B3D
 
 Unofficial implementation of "Black-box Detection of Backdoor Attacks with Limited Information and Data" (https://arxiv.org/pdf/2103.13127.pdf).
 
 
-# Usage
+## Usage
 
 A few different backdoor setups (mask, pattern, backdoored class) are defined in *masks.py*.
 
