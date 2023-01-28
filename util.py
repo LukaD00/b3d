@@ -18,6 +18,3 @@ def normalize(features):
 	features_copy[2] = (features_copy[2] - 0.4465) / 0.2010
 	return features_copy
 
-def save_image(sample, path):
-	pil_transform = transforms.ToPILImage()
-	pil_transform(renormalize(sample[0])).save(path)

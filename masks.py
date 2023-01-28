@@ -1,34 +1,38 @@
 import torch
 
-def poisoned_1xbottom_right_green():
-	name = "poisoned-1xbottom_right_green"
+def backdoor1():
+	name = "backdoored-1"
 	mask = torch.zeros(32,32)
 	mask[30,30] = 1
 	pattern = torch.zeros(3,32,32)
 	pattern[1,30,30] = 1
-	return mask, pattern, name
+	c = 0
+	return mask, pattern, name, c
 
-def poisoned_1xupper_left_red():
-	name = "poisoned-1xupper_left_red"
+def backdoor2():
+	name = "backdoored-2"
 	mask = torch.zeros(32,32)
 	mask[2,2] = 1
 	pattern = torch.zeros(3,32,32)
-	pattern[0,30,30] = 1
-	return mask, pattern, name
+	pattern[0,2,2] = 1
+	c = 1
+	return mask, pattern, name, c
 
-def poisoned_2x2xupper_right_blue():
-	name = "poisoned_2x2xupper_right_blue"
+def backdoor3():
+	name = "backdoored-3"
 	mask = torch.zeros(32,32)
 	mask[3,29] = 1
 	pattern = torch.zeros(3,32,32)
-	pattern[2,30,30] = 1
-	return mask, pattern, name
+	pattern[2,3,29] = 1
+	c = 2
+	return mask, pattern, name, c 
 
-def poisoned_1xmiddle_1():
-	name = "poisoned_1xmiddle_1"
+def backdoor4():
+	name = "backdoored-4"
 	mask = torch.zeros(32,32)
 	mask[17,12] = 1
 	pattern = torch.zeros(3,32,32)
-	pattern[1,30,30] = 1
-	pattern[2,30,30] = 0.6
-	return mask, pattern, name
+	pattern[1,17,12] = 1
+	pattern[2,17,12] = 0.6
+	c = 3 
+	return mask, pattern, name, c

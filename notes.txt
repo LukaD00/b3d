@@ -1,4 +1,0 @@
-poisoned-1xbottom_right_green class0
-poisoned-1xupper_left_red class0
-poisoned-2x2xupper_right_blue class7
-poisoned_1xmiddle_1 class7

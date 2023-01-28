@@ -11,11 +11,11 @@ from models.resnet import ResNet18
 from poison import CIFAR10_POISONED
 import masks
 
-if __name__ == "__main__":
-
-	print("Preparing datasets")
-	mask, pattern, name = masks.poisoned_1xmiddle_1()
-	name = "not-poisoned-4 "
+def train(mask, pattern, c, poison_percent, name):
+	print(f"Training {name}")
+	print(f"\tPoison percent = {poison_percent}")
+	print(f"\tBackdoor class = {c}")
+	
 	file = "weights/" + name + ".pt"
 	
 	transform_train = transforms.Compose([
@@ -26,16 +26,15 @@ if __name__ == "__main__":
 		transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 	])
 
-	trainset = torchvision.datasets.CIFAR10(root="./data", train=True, download=True, transform=transforms.ToTensor())
-	trainset_poisoned = CIFAR10_POISONED(trainset, mask, pattern, 7, transform_train, poison_percent=0.0)
-	testset = torchvision.datasets.CIFAR10(root="./data", train=False, download=True, transform=transform_test)
+	trainset = torchvision.datasets.CIFAR10(root="./data", train=True, download=False, transform=transforms.ToTensor())
+	trainset_poisoned = CIFAR10_POISONED(trainset, mask, pattern, c, transform_train, poison_percent=poison_percent)
+	testset = torchvision.datasets.CIFAR10(root="./data", train=False, download=False, transform=transform_test)
 
 	trainloader = torch.utils.data.DataLoader(trainset_poisoned, batch_size=128, shuffle=True, num_workers=2)
 	testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
 
 	device = "cuda"
 
-	print("Training the model")
 	best_acc = 0  
 
 	net = ResNet18()
@@ -49,8 +48,9 @@ if __name__ == "__main__":
 	scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
 	start_time = time.time()
 
-	for epoch in range(30):
-		print(f"\nEpoch: {epoch}, time: {(time.time()-start_time)/60:.2f} min")
+	epochs = 20
+	for epoch in range(epochs):
+		print(f"\tEpoch: {epoch} / {epochs}, best accuracy: {best_acc}, time: {(time.time()-start_time)/60:.2f} min")
 
 		# Train
 		total_loss = 0
@@ -70,7 +70,7 @@ if __name__ == "__main__":
 			correct += predicted.eq(targets).sum().item()
 		total_loss /= len(trainloader)
 		accuracy = (100.*correct/total)
-		print(f"Train -> Loss: {total_loss:.3f} | Acc: {accuracy:.3f}")
+		#print(f"Train -> Loss: {total_loss:.3f} | Acc: {accuracy:.3f}")
 
 		# Test
 		net.eval()
@@ -89,13 +89,16 @@ if __name__ == "__main__":
 				correct += predicted.eq(targets).sum().item()
 		total_loss /= len(testloader)
 		accuracy = (100.*correct/total)
-		print(f"Test -> Loss: {total_loss:.3f} | Acc: {accuracy:.3f}")
+		#print(f"Test -> Loss: {total_loss:.3f} | Acc: {accuracy:.3f}")
 
 		if accuracy > best_acc:
 			best_acc = accuracy
-			print(f"Saving weights to {file}")
+			#print(f"Saving weights to {file}")
 			#torch.save(net, file)
 			torch.save(net.state_dict(), file)
 
 		scheduler.step()
 
+if __name__ == "__main__":
+	mask, pattern, name, c = masks.backdoor1()
+	train(mask, pattern, c, 0.1, name)
