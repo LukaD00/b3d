@@ -17,8 +17,8 @@ def backdoored():
 
 
 if __name__ == "__main__":
-	for i in [1,2,3,4]:
-		b3d.b3d_complete("not-backdoored-"+str(i))
+	#for i in [1,2,3,4]:
+#		b3d.b3d_complete("not-backdoored-"+str(i))
 
 	for mask, pattern, name, c in [masks.backdoor3(), 
 									masks.backdoor4(),

@@ -12,7 +12,7 @@ if __name__ == "__main__":
 	
 	to_image = transforms.ToPILImage()
 	if testing_backdoored:
-		mask, pattern, name, c_backdoor = masks.backdoor5()
+		mask, pattern, name, c_backdoor = masks.backdoor3()
 		mask = mask.to("cuda")
 		pattern = pattern.to("cuda")
 
