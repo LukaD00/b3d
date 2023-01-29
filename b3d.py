@@ -15,7 +15,7 @@ def b3d(model, c):
 	model = model.to(device)
 
 	lambd = torch.tensor(1e-3, requires_grad=True)
-	k = 25
+	k = 50
 	epochs = 1
 	sigma = 0.1
 	batch_size = 32
@@ -31,7 +31,7 @@ def b3d(model, c):
 			return F.cross_entropy(predicted, target) + lambd*torch.linalg.norm(torch.flatten(m),ord=1)
 
 	transform = transforms.Compose([transforms.ToTensor()])
-	dataset = torchvision.datasets.CIFAR10(root="./data", train=False, download=True, transform=transform)
+	dataset = torchvision.datasets.CIFAR10(root="./data", train=False, download=False, transform=transform)
 	dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=2)
 
 	theta_m = torch.full(size=(32,32),fill_value=-1.14).to("cuda")

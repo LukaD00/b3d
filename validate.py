@@ -11,7 +11,7 @@ def g(x): return (torch.tanh(x)+1)/2
 if __name__ == "__main__":
 	
 	print("Preparing datasets")
-	mask, pattern, name = masks.poisoned_1xupper_left_red()
+	mask, pattern, name, c = masks.backdoor5()
 	file = "weights/" + name + ".pt"
 	
 	device = "cuda"
@@ -37,7 +37,7 @@ if __name__ == "__main__":
 	]))
 	testset_poisoned = CIFAR10_POISONED(
 		torchvision.datasets.CIFAR10(root="./data", train=False, download=True, transform=transforms.ToTensor()),
-		mask, pattern, 0, 
+		mask, pattern, c, 
 		transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 		poison_percent=1)
 	

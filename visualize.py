@@ -2,17 +2,29 @@ import torch
 import torchvision.transforms as transforms
 
 from poison import poison
+import masks
 
 
 def g(x): return (torch.tanh(x)+1)/2
 
 if __name__ == "__main__":
-	name = "backdoored-1"
-
-
+	testing_backdoored = True
+	
 	to_image = transforms.ToPILImage()
+	if testing_backdoored:
+		mask, pattern, name, c_backdoor = masks.backdoor5()
+		mask = mask.to("cuda")
+		pattern = pattern.to("cuda")
 
-	distribution_params = torch.load("weights/"+name+".pt")
+		image = torch.zeros((3,32,32)).to("cuda")
+		image_poisoned = poison(image, mask, pattern)
+		to_image(image_poisoned).save(f"images/real.png")
+		print(f"Backdoored: {c_backdoor}")
+	else:
+		name = "not-backdoored-4"
+
+	print(name)
+	distribution_params = torch.load("weights/"+name+"-TRIGGERS.pt")
 	l1_norms = []
 
 	for c, (theta_m, theta_p) in enumerate(distribution_params):
@@ -33,7 +45,7 @@ if __name__ == "__main__":
 	AIs = [dev/(MAD*1.4826) for dev in deviations]
 
 
-	print(f"Median L1: {median}")
+	print(f"Median L1: {median}, Median/4: {median/4}")
 	print(f"MAD: {MAD}")
 	for c in range(len(AIs)):
 		if (l1_norms[c] < median and AIs[c] > 2):
