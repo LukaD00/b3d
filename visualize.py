@@ -12,7 +12,7 @@ if __name__ == "__main__":
 	
 	to_image = transforms.ToPILImage()
 	if testing_backdoored:
-		mask, pattern, name, c_backdoor = masks.backdoor3()
+		mask, pattern, name, c_backdoor = masks.backdoor1()
 		mask = mask.to("cuda")
 		pattern = pattern.to("cuda")
 
@@ -21,7 +21,7 @@ if __name__ == "__main__":
 		to_image(image_poisoned).save(f"images/real.png")
 		print(f"Backdoored: {c_backdoor}")
 	else:
-		name = "not-backdoored-4"
+		name = "not-backdoored-3"
 
 	print(name)
 	distribution_params = torch.load("weights/"+name+"-TRIGGERS.pt")
@@ -48,7 +48,7 @@ if __name__ == "__main__":
 	print(f"Median L1: {median}, Median/4: {median/4}")
 	print(f"MAD: {MAD}")
 	for c in range(len(AIs)):
-		if (l1_norms[c] < median and AIs[c] > 2):
+		if (l1_norms[c] < median and AIs[c] > 2) or (l1_norms[c] < median/4):
 			print(f"c = {c}, l1 = {l1_norms[c]:2f}, deviation = {deviations[c]:2f}, anomaly index = {AIs[c] :2f} <= BACKDOOR")
 		else:
 			print(f"c = {c}, l1 = {l1_norms[c]:2f}, deviation = {deviations[c]:2f}, anomaly index = {AIs[c] :2f}")

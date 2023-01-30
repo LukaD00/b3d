@@ -14,8 +14,8 @@ def b3d(model, c):
 
 	model = model.to(device)
 
-	lambd = torch.tensor(1e-3, requires_grad=True)
-	k = 50
+	lambd = torch.tensor(2.5e-3, requires_grad=True)
+	k = 20
 	epochs = 1
 	sigma = 0.1
 	batch_size = 32
@@ -95,7 +95,7 @@ def mad(triggers):
 	print(f"\tMedian L1: {median}")
 	print(f"\tMAD: {MAD}")
 	for c in range(len(AIs)):
-		if (l1_norms[c] < median and AIs[c] > 2):
+		if (l1_norms[c] < median and AIs[c] > 2) or (l1_norms[c] < median/4):
 			print(f"\tc = {c}, l1 = {l1_norms[c]:2f}, deviation = {deviations[c]:2f}, anomaly index = {AIs[c] :2f} <= BACKDOOR")
 		else:
 			print(f"\tc = {c}, l1 = {l1_norms[c]:2f}, deviation = {deviations[c]:2f}, anomaly index = {AIs[c] :2f}")
